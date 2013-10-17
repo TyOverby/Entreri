@@ -1,5 +1,8 @@
 module typedecl;
+
 import std.traits;
+
+import world;
 
 // This source file is completely ripped off from artemisd.
 mixin template ComponentDecl() {
@@ -13,8 +16,9 @@ mixin template ComponentDecl() {
 
     static if(!__traits(isAbstractClass,typeof(this))) {
         static if (!__traits(isFinalClass, typeof(this))) {
-            static assert(0, fullyQualifiedName!(typeof(this)) ~ " *MUST* be a final class");
+            static assert(0, "All classes extending Component *MUST* be a final class");
         }
+
         override uint GetTypeId() {
             return TypeId;
         }
@@ -31,7 +35,7 @@ mixin template ComponentDecl() {
 }
 
 mixin template ComponentImpl() {
-    new(size_t sz, ComponentManager!(typeof(this)) cmp, uint id) {
-        return cmp.nextpos(id);
+    new(size_t sz, ComponentManager!(typeof(this)) cmp) {
+        return cmp.nextpos();
     }
 }
