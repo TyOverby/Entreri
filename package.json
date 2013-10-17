@@ -1,0 +1,9 @@
+{
+	"name": "entreri",
+	"description": "An Entity-Component framework for D.",
+	"homepage": "http://example.org",
+	"copyright": "Copyright © 2000, Ty Overby",
+	"authors": [
+		"Ty Overby"
+	]
+}
