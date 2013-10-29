@@ -1,4 +1,4 @@
-module entreriexception;
+module entreri.entreriexception;
 
 class EntreriException: object.Error {
     this(string message) {

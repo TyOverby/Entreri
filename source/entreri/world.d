@@ -1,8 +1,8 @@
-module world;
+module entreri.world;
 
-import componentmanager;
-import entreriexception;
-import entitysystem;
+import entreri.componentmanager;
+import entreri.entreriexception;
+import entreri.entitysystem;
 
 import std.stdio;
 import std.array;
@@ -21,16 +21,16 @@ class World {
         if(initialized) {
             throw new EntreriException("Added a componentManager to already initialized World");
         }
-        if(A.TypeId in mapping) {
+        if(A.typenum in mapping) {
             throw new EntreriException("Duplicate ComponentManager: " ~ fullyQualifiedName!(A));
         }
 
-        mapping[A.TypeId] = cm;
+        mapping[A.typenum] = cm;
         cm.addedToWorld(this);
     }
 
-    ComponentManager!A componentManager(A)(){
-        return cast(ComponentManager!A)(mapping[A.TypeId]);
+    ComponentManager!A getComponentManager(A)(){
+        return cast(ComponentManager!A)(mapping.get(A.typenum , null));
     }
 
 
@@ -69,11 +69,13 @@ class Entity {
     }
 
     A get(A)(){
-        return world.componentManager!A.get(id);
+        return world.getComponentManager!A.get(id);
     }
 
-    void addComponent(A)(A component) {
-       auto manager = world.componentManager!A;
+    void add(A, Args...)(Args args) {
+       auto manager = world.getComponentManager!A;
+       auto component = manager.addComponent!A(args);
        manager.registerComponent(id, component);
     }
 }
+

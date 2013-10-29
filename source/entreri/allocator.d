@@ -1,3 +1,5 @@
+module entreri.allocator;
+
 import core.memory;
 import std.stdio;
 import std.conv;
@@ -83,6 +85,7 @@ class ClassAllocator(A) {
     }
 }
 
+/*
 final class Position {
     int x;
     int y;
@@ -105,4 +108,4 @@ void main() {
     for(size_t i = 0; i < TO; i++) {
         writefln("=== %d, %d ===", alloc[i].x, alloc[i].y);
     }
-}
+} */
