@@ -29,7 +29,7 @@ class Aspect {
         }
     }
 
-    override bool opEquals(Object o) {
+    override bool opEquals(Object o) const {
         if(auto a = cast(Aspect) o) {
             if (ba.length != a.ba.length) {
                 return false;
@@ -41,7 +41,7 @@ class Aspect {
         }
     }
 
-    bool isSubsetOf(Aspect other) {
+    bool isSubsetOf(Aspect other) const {
         import std.stdio;
         if(this.ba.length > other.ba.length) {
             return false;

@@ -6,9 +6,9 @@ import entreri.aspect;
 abstract class EntitySystem {
     void process(Entity entity);
 
-    private Aspect aspect;
+    public const Aspect aspect;
 
-    this(Aspect aspect){
+    this(Aspect aspect) {
         this.aspect = aspect;
     }
 }

@@ -1,4 +1,7 @@
+module entreri.app;
+
 import std.stdio;
+import std.conv: to;
 
 import entreri.world;
 import entreri.componentmanager;
@@ -30,6 +33,16 @@ final class Velocity: Component {
     }
 }
 
+final class Name: Component {
+    mixin TypeNum;
+
+    string name;
+
+    this(string name) {
+        this.name = name;
+    }
+}
+
 final class MovementSystem: EntitySystem {
     this() {
         super(Aspect.from!(Position, Velocity));
@@ -56,15 +69,28 @@ final class RenderSystem: EntitySystem {
     }
 }
 
+final class NameRenderSystem: EntitySystem {
+    this() {
+        super(Aspect.from!(Name));
+    }
+
+    override void process(Entity entity) {
+        auto name = entity.get!Name.name;
+        writeln(name);
+    }
+}
+
 void main()
 {
     auto world = new World();
 
     world.addManager(new ComponentManager!Position);
     world.addManager(new ComponentManager!Velocity);
+    world.addManager(new ComponentManager!Name);
 
     world.addSystem(new RenderSystem);
     world.addSystem(new MovementSystem);
+    world.addSystem(new NameRenderSystem);
 
     world.initialize();
 
@@ -73,6 +99,9 @@ void main()
         auto e = world.newEntity();
         e.add!Position(i, i);
         e.add!Velocity(i, i);
+        if(i % 2 == 0) {
+            e.add!Name("foo " ~ to!string(i));
+        }
     }
 
     world.runIteration();

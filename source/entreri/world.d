@@ -3,6 +3,7 @@ module entreri.world;
 import entreri.componentmanager;
 import entreri.entreriexception;
 import entreri.entitysystem;
+import entreri.aspect;
 
 import std.stdio;
 import std.array;
@@ -30,7 +31,12 @@ class World {
     }
 
     ComponentManager!A getComponentManager(A)(){
-        return cast(ComponentManager!A)(mapping.get(A.typenum , null));
+        if(A.typenum in mapping){
+            return cast(ComponentManager!A) mapping[A.typenum];
+        } else {
+            throw new EntreriException("A ComponentManager for " ~
+                    typeid(A).typeinfo.name ~ " does not exist.");
+        }
     }
 
 
@@ -41,7 +47,9 @@ class World {
     void runIteration() {
         foreach(es; entitySystems) {
             foreach(e; entities) {
-                es.process(e);
+                if(es.aspect.isSubsetOf(e.aspect)) {
+                    es.process(e);
+                }
             }
         }
     }
@@ -61,11 +69,13 @@ class World {
 
 class Entity {
     immutable uint id;
+    package Aspect aspect;
     World world;
 
     this(uint id, World world) {
         this.id = id;
         this.world = world;
+        this.aspect = new Aspect;
     }
 
     A get(A)(){
@@ -76,6 +86,7 @@ class Entity {
        auto manager = world.getComponentManager!A;
        auto component = manager.addComponent!A(args);
        manager.registerComponent(id, component);
+       aspect.add!A;
     }
 }
 

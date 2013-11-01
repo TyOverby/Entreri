@@ -2,11 +2,11 @@ import std.stdio;
 
 import entreri.world;
 import entreri.componentmanager;
-import entreri.typedecl;
+//import entreri.typedecl;
 import entreri.component;
 
 final class Position: Component {
-    mixin ComponentDecl;
+    mixin TypeNum;
 
     int x;
     int y;
@@ -17,7 +17,7 @@ final class Position: Component {
     }
 }
 
-void main() {
+/*void main() {
     auto world = new World();
     world.addManager(new ComponentManager!Position);
 
@@ -26,4 +26,4 @@ void main() {
 
     auto pos = entity.get!Position;
     writefln("x: %d, y: %d", pos.x, pos.y);
-}
+}*/
