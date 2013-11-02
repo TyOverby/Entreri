@@ -1,10 +1,11 @@
 module entreri.allocator;
 
 import core.memory;
+import core.exception;
 import std.stdio;
 import std.conv;
 
-class ClassAllocator(A) {
+class ClassAllocator(A, bool GROWABLE = true) {
     static assert(__traits(isFinalClass, A), "ClassAllocator can only work with final classes.");
 
     private immutable SIZE = __traits(classInstanceSize, A);
@@ -17,11 +18,7 @@ class ClassAllocator(A) {
 
     private bool[size_t] holes;
 
-    this() {
-        this(64);
-    }
-
-    this(size_t initialCapacity) {
+    this(size_t initialCapacity = 64) {
         capacity = initialCapacity;
         resize();
     }
@@ -37,10 +34,14 @@ class ClassAllocator(A) {
         }
     }
 
-    private void grow() {
-        this.capacity *= 3;
-        this.capacity /= 2;
-        this.resize();
+    protected void grow() {
+        if(!GROWABLE) {
+            throw new OutOfMemoryError();
+        } else {
+            this.capacity *= 3;
+            this.capacity /= 2;
+            this.resize();
+        }
     }
 
     private void testResize() {
@@ -49,7 +50,7 @@ class ClassAllocator(A) {
         }
     }
 
-    void[] getNext() {
+    private void[] getNext() {
         testResize();
 
         if(holes.length != 0) {
@@ -67,11 +68,15 @@ class ClassAllocator(A) {
         return toReturn;
     }
 
-    A opIndex(size_t index) {
+    public A place(Args...)(ref Args args) {
+        return emplace!A(getNext(), args);
+    }
+
+    public A opIndex(size_t index) {
         return cast(A)  &(mem[index * SIZE]);
     }
 
-    bool remove(size_t index) {
+    public bool remove(size_t index) {
         if(index >= capacity) {
             throw new Error("Index not in range.");
         }
@@ -83,29 +88,35 @@ class ClassAllocator(A) {
             return true;
         }
     }
-}
 
-/*
-final class Position {
-    int x;
-    int y;
-
-    this(int x, int y) {
-        this.x = x;
-        this.y = y;
+    public bool free(A obj) {
+        return true;
     }
 }
 
-void main() {
+//TODO(tyoverby): write unittests
+
+unittest {
+    final class Position {
+        int x;
+        int y;
+
+        this(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
     Position[] positions;
     immutable TO = 100;
 
-    auto alloc = new ClassAllocator!Position(64);
+    auto alloc = new ClassAllocator!(Position, true)(64);
     for(int i = 0; i < TO; i++) {
-        Position p =  emplace!Position(alloc.getNext() , i,TO - i);
+        Position p =  alloc.place(i, TO - i);//emplace!Position(i, TO - i);
     }
 
     for(size_t i = 0; i < TO; i++) {
-        writefln("=== %d, %d ===", alloc[i].x, alloc[i].y);
+         assert(alloc[i].x == i);
+         assert(alloc[i].y == TO - i);
     }
-} */
+}

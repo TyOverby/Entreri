@@ -3,26 +3,25 @@ module entreri.componentmanager;
 import entreri.entreriexception;
 import entreri.component;
 import entreri.world;
-import entreri.allocator;
+public import entreri.memorymanager;
 
 import core.memory;
 import std.conv;
 import std.stdio;
 
 class ComponentManager(C: Component) {
-    private ClassAllocator!C alloc;
+    private MemoryManager!C memoryManager;
     private C[uint] idToComponent;
 
     private World _world = null;
     @property World world() {return _world;}
 
-    this() {
-        alloc= new ClassAllocator!C;
+    this(MemoryManager!C memoryManager) {
+        this.memoryManager = memoryManager;
     }
 
-    package C addComponent(C, Args...)(auto ref Args args) {
-        C c =  emplace!C(alloc.getNext(), args);
-        return c;
+    package C addComponent(Args...)(Args args) {
+        return memoryManager.instantiate(args);
     }
 
     package C get(uint id) {

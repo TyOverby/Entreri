@@ -84,7 +84,7 @@ class Entity {
 
     void add(A, Args...)(Args args) {
        auto manager = world.getComponentManager!A;
-       auto component = manager.addComponent!A(args);
+       auto component = manager.addComponent(args);
        manager.registerComponent(id, component);
        aspect.add!A;
     }
