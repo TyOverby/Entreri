@@ -2,8 +2,16 @@
 	"name": "entreri",
 	"description": "An Entity-Component framework for D.",
 	"homepage": "http://example.org",
-	"copyright": "Copyright © 2000, Ty Overby",
+	"copyright": "Copyright (c) 2000, Ty Overby",
 	"authors": [
 		"Ty Overby"
-	]
+	],
+  "configurations": [
+    {
+      "name": "demoapp",
+      "targetType": "executable",
+      "targetName": "app",
+      "versions": "App"
+    }
+  ]
 }
