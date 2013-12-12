@@ -4,7 +4,7 @@ import entreri.world;
 import entreri.aspect;
 
 abstract class EntitySystem {
-    void process(Entity entity);
+    void process(World.Entity entity);
 
     public const Aspect aspect;
 

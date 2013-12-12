@@ -8,7 +8,7 @@ import std.conv;
 class ClassAllocator(A, bool GROWABLE = true) {
     static assert(__traits(isFinalClass, A), "ClassAllocator can only work with final classes.");
 
-    private immutable SIZE = __traits(classInstanceSize, A);
+    private enum SIZE = __traits(classInstanceSize, A);
 
     private void* memptr = null;
     private void[] mem = null;
@@ -68,7 +68,7 @@ class ClassAllocator(A, bool GROWABLE = true) {
         return toReturn;
     }
 
-    public A place(Args...)(ref Args args) {
+    public A place(Args...)(Args args) {
         return emplace!A(getNext(), args);
     }
 

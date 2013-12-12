@@ -59,34 +59,30 @@ class World {
         initialized = true;
     }
 
-    Entity newEntity() {
-        auto toReturn = new Entity(ids++, this);
-        entities ~= toReturn;
-        return toReturn;
-    }
+  class Entity {
+      immutable uint id;
+      package Aspect aspect;
 
+      this() {
+        this(ids++);
+      }
+
+      private this(uint id) {
+          this.id = id;
+          this.aspect = new Aspect;
+
+          entities ~= this;
+      }
+
+      A get(A)(){
+          return getComponentManager!A.get(id);
+      }
+
+      void add(A, Args...)(Args args) {
+         ComponentManager!A manager = getComponentManager!A;
+         A component = manager.addComponent!Args(args);
+         manager.registerComponent(id, component);
+         aspect.add!A;
+      }
+  }
 }
-
-class Entity {
-    immutable uint id;
-    package Aspect aspect;
-    World world;
-
-    this(uint id, World world) {
-        this.id = id;
-        this.world = world;
-        this.aspect = new Aspect;
-    }
-
-    A get(A)(){
-        return world.getComponentManager!A.get(id);
-    }
-
-    void add(A, Args...)(Args args) {
-       auto manager = world.getComponentManager!A;
-       auto component = manager.addComponent(args);
-       manager.registerComponent(id, component);
-       aspect.add!A;
-    }
-}
-

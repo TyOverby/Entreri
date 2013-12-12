@@ -8,7 +8,7 @@ import core.exception: OutOfMemoryError;
 import std.conv: emplace;
 
 interface MemoryManager(C: Component) {
-    C instantiate(Args...)(ref Args args);
+    C instantiate(Args...)(Args args);
     void free(C obj);
 }
 
@@ -18,8 +18,11 @@ class GrowingManager(C: Component): MemoryManager!C {
     this(size_t initialCapacity = 64) {
        this.allocator = new ClassAllocator!(C)(initialCapacity);
     }
+    this() {
+      this(64);
+    }
 
-    C instantiate(Args...)(ref Args args) {
+    C instantiate(Args...)(Args args) {
         return allocator.place(args);
     }
 
@@ -53,7 +56,7 @@ class StaticManager(C: Component): MemoryManager!C {
         this.allocator = new ClassAllocator!(C, false)(initialCapacity);
     }
 
-    C instantiate(Args...)(ref Args args) {
+    C instantiate(Args...)(Args args) {
         return allocator.place(args);
     }
 
@@ -85,7 +88,8 @@ unittest {
 }
 
 class HeapManager(C: Component): MemoryManager!C {
-    C instantiate(Args...)(ref Args args) {
+    this(int n) {}
+    C instantiate(Args...)(Args args) {
         size_t size = __traits(classInstanceSize, C);
         void* memory = GC.malloc(size);
         void[] chunk = memory[0 .. size];

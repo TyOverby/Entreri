@@ -10,14 +10,14 @@ import std.conv;
 import std.stdio;
 
 class ComponentManager(C: Component) {
-    private MemoryManager!C memoryManager;
+    private GrowingManager!C memoryManager;
     private C[uint] idToComponent;
 
     private World _world = null;
     @property World world() {return _world;}
 
-    this(MemoryManager!C memoryManager) {
-        this.memoryManager = memoryManager;
+    this() {
+        this.memoryManager = new GrowingManager!C(64);
     }
 
     package C addComponent(Args...)(Args args) {

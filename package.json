@@ -11,7 +11,7 @@
       "name": "demoapp",
       "targetType": "executable",
       "targetName": "app",
-      "versions": "App"
+      "versions": ["App"],
     }
   ]
 }

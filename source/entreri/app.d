@@ -47,7 +47,7 @@ final class MovementSystem: EntitySystem {
     this() {
         super(Aspect.from!(Position, Velocity));
     }
-    override void process(Entity entity) {
+    override void process(World.Entity entity) {
         auto pos = entity.get!Position;
         auto vel = entity.get!Velocity;
 
@@ -63,7 +63,7 @@ final class RenderSystem: EntitySystem {
     this() {
         super(Aspect.from!(Position, Velocity));
     }
-    override void process(Entity entity) {
+    override void process(World.Entity entity) {
         auto pos = entity.get!Position;
         writefln("id: %d, x: %d, y: %d", entity.id, pos.x, pos.y);
     }
@@ -74,19 +74,19 @@ final class NameRenderSystem: EntitySystem {
         super(Aspect.from!(Name));
     }
 
-    override void process(Entity entity) {
+    override void process(World.Entity entity) {
         auto name = entity.get!Name.name;
         writeln(name);
     }
 }
 
-void main()
-{
+version(App){
+void main() {
     auto world = new World();
 
-    world.addManager(new ComponentManager!Position(new GrowingManager!Position));
-    world.addManager(new ComponentManager!Velocity(new GrowingManager!Velocity));
-    world.addManager(new ComponentManager!Name(new GrowingManager!Name));
+    world.addManager(new ComponentManager!Position);
+    world.addManager(new ComponentManager!Velocity);
+    world.addManager(new ComponentManager!Name);
 
     world.addSystem(new RenderSystem);
     world.addSystem(new MovementSystem);
@@ -96,7 +96,7 @@ void main()
 
 
     for(auto i = 0; i < 5; i++) {
-        auto e = world.newEntity();
+        auto e = world.new Entity;
         e.add!Position(i, i);
         e.add!Velocity(i, i);
         if(i % 2 == 0) {
@@ -109,4 +109,5 @@ void main()
     world.runIteration();
     writeln();
     world.runIteration();
+}
 }
