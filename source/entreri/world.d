@@ -1,91 +1,72 @@
 module entreri.world;
 
-import entreri.componentmanager;
-import entreri.entreriexception;
-import entreri.entitysystem;
-import entreri.aspect;
-import entreri.component;
-import entreri.mem.memorymanager;
+import entreri.componentallocator;
 
-import std.stdio;
-import std.array;
-import std.traits;
+debug import std.stdio;
 
 class World {
-    private Object[int] managers;
-    private bool initialized = false;
-
-    private uint ids = 0;
-
+    //TODO: Use a StructAllocator to manage the entities list :P
     private Entity[] entities;
-    private EntitySystem[] entitySystems;
+    private uint idCounter = 0;
 
-    void addManager(A)(ComponentManager!A cm) {
-        if(initialized) {
-            throw new EntreriException("Added a componentManager to already initialized World");
-        }
-        if(A.typenum in managers) {
-            throw new EntreriException("Duplicate ComponentManager: " ~ fullyQualifiedName!(A));
-        }
+    void*[uint] allocators;
 
-        managers[A.typenum] = cast(Object) cm;
-        cm.addToWorld(this);
+    Entity* newEntity() {
+        auto e = Entity(idCounter++);
+        e.world = this;
+        entities ~= e;
+        return &entities[entities.length - 1];
     }
 
-    ComponentManager!A getComponentManager(A)(){
-        if(A.typenum in managers){
-            return cast(ComponentManager!A) managers[A.typenum];
-        } else {
-            throw new EntreriException("A ComponentManager for " ~
-                    typeid(A).typeinfo.name ~ " does not exist.");
-        }
+    void register(C)(ComponentAllocator!C componentAllocator) {
+        allocators[C.typeNum] = cast(void*) componentAllocator;
     }
 
 
-    void addSystem(EntitySystem es) {
-        entitySystems ~= es;
-    }
+    struct Entity {
+        private bool alive = true;
+        const uint id;
+        package World world;
 
-    void runIteration() {
-        foreach(es; entitySystems) {
-            foreach(e; entities) {
-                if(es.aspect.isSubsetOf(e.aspect)) {
-                    es.process(e);
-                }
+        private this(uint id) {
+            this.id = id;
+        }
+
+        C* add(C)() {
+            if (C.typeNum !in world.allocators) {
+                throw new Exception("No allocator for component ");
             }
+            auto alloc = (cast (ComponentAllocator!C) world.allocators[C.typeNum]);
+            return alloc.allocate(id);
+        }
+
+        C* get(C)() {
+            return (cast (ComponentAllocator!C) world.allocators[C.typeNum]).get(id);
         }
     }
+}
 
+unittest {
+    import entreri.structallocator;
 
-    void initialize() {
-        initialized = true;
+    struct Foo {
+        static typeNum = 0;
+        uint x = 5;
     }
 
-  class Entity {
-      immutable uint id;
-      package Aspect aspect;
+    auto w = new World;
+    w.register!Foo(new StructAllocator!Foo);
 
-      this() {
-        this(ids++);
-      }
+    auto e = w.newEntity();
+    assert(e.id == 0);
+    assert(e.world == w);
 
-      private this(uint id) {
-          this.id = id;
-          this.aspect = new Aspect;
+    auto f = e.add!Foo;
+    assert(f.x == 5);
+    f.x = 10;
 
-          entities ~= this;
-      }
-
-      A get(A)(){
-          return getComponentManager!A.get(id);
-      }
-
-      void add(A, Args...)(Args args) {
-         //ComponentManager!A manager = getComponentManager!A;
-         GrowingManager!A manager = cast(GrowingManager!A) getComponentManager!A;
-         A component = manager.addComponent!Args(args);
-         manager.registerComponent(id, component);
-         aspect.add!A;
-      }
-  }
+    auto f2 = e.get!Foo;
+    assert(f2.x != 5);
+    assert(f2.x == 10);
 }
+

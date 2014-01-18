@@ -1,9 +1,5 @@
 module entreri.component;
 
-public import entreri.typenum;
+class Component {
 
-abstract class Component {
-    protected static typenum_pool = 0;
-
-    @property static public int typenum();
 }
