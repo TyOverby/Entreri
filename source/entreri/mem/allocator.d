@@ -1,4 +1,4 @@
-module entreri.allocator;
+module entreri.mem.allocator;
 
 import core.memory;
 import core.exception;

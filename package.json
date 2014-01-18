@@ -12,6 +12,13 @@
       "targetType": "executable",
       "targetName": "app",
       "versions": ["App"],
+    },
+    {
+      "name": "demo_release",
+      "targetType": "executable",
+      "targetName": "app_rel",
+      "versions": ["App"],
+      "buildOptions": ["inline", "optimize", "noBoundsChecks"],
     }
   ]
 }

@@ -13,7 +13,7 @@ class Aspect {
         return a;
     }
 
-    package BitArray ba;
+    private BitArray ba;
 
     private void add(T)() if (is (T: Component)) {
         if(ba.length < T.typenum + 1) {

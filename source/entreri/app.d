@@ -4,7 +4,7 @@ import std.stdio;
 import std.conv: to;
 
 import entreri.world;
-import entreri.componentmanager;
+import entreri.mem.memorymanager;
 import entreri.component;
 import entreri.entitysystem;
 import entreri.aspect;
@@ -84,9 +84,16 @@ version(App){
 void main() {
     auto world = new World();
 
-    world.addManager(new ComponentManager!Position);
-    world.addManager(new ComponentManager!Velocity);
-    world.addManager(new ComponentManager!Name);
+    auto x = new GrowingManager!Position;
+    x.addComponent(5,6);
+    auto y = new GrowingManager!Velocity;
+    y.addComponent(5,6);
+    auto z = new GrowingManager!Name;
+    z.addComponent("hi");
+
+    world.addManager(new GrowingManager!Position);
+    world.addManager(new GrowingManager!Velocity);
+    world.addManager(new GrowingManager!Name);
 
     world.addSystem(new RenderSystem);
     world.addSystem(new MovementSystem);

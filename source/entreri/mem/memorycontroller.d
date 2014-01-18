@@ -1,18 +1,18 @@
-module entreri.memorymanager;
+module entreri.mem.memorycontroller;
 
 import entreri.component;
-import entreri.allocator;
+import entreri.mem.allocator;
 
 import core.memory: GC;
 import core.exception: OutOfMemoryError;
 import std.conv: emplace;
 
-interface MemoryManager(C: Component) {
+interface MemoryController (C: Component) {
     C instantiate(Args...)(Args args);
     void free(C obj);
 }
 
-class GrowingManager(C: Component): MemoryManager!C {
+class GrowingController(C: Component): MemoryController!C {
     private ClassAllocator!(C, true) allocator;
 
     this(size_t initialCapacity = 64) {
@@ -49,7 +49,7 @@ unittest {
     assert(ins.s == "hi");
 }
 
-class StaticManager(C: Component): MemoryManager!C {
+class StaticController(C: Component): MemoryController!C {
     private ClassAllocator!(C, false) allocator;
 
     this(size_t initialCapacity) {
@@ -87,7 +87,7 @@ unittest {
     assertThrown!OutOfMemoryError(man.instantiate(6, "another"));
 }
 
-class HeapManager(C: Component): MemoryManager!C {
+class HeapController(C: Component): MemoryController!C {
     this(int n) {}
     C instantiate(Args...)(Args args) {
         size_t size = __traits(classInstanceSize, C);

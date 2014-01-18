@@ -3,7 +3,7 @@ import std.stdio;
 import entreri.world;
 import entreri.componentmanager;
 import entreri.component;
-import entreri.memorymanager;
+import entreri.mem.memorymanager;
 
 final class Position: Component {
     mixin TypeNum;
