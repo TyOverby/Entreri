@@ -81,7 +81,6 @@ unittest {
 }
 
 // Basic allocation locations
-
 unittest {
     struct Foo {
         int x;

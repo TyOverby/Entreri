@@ -4,7 +4,6 @@ import entreri.componentallocator;
 import entreri.growingstructallocator;
 
 import std.conv: emplace;
-
 debug import std.stdio;
 
 class World {
@@ -40,9 +39,9 @@ class World {
 
         S* add(S, Args...)(Args args) if (is (S == struct)) {
             if (S.typeNum !in world.allocators) {
-                // TODO: Add descriptive name
-                throw new Exception("No allocator for component ");
+                throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
+
             ComponentAllocator!S alloc = (cast (ComponentAllocator!S) world.allocators[S.typeNum]);
             S* ptr = alloc.allocate(id);
             ptr = emplace(ptr, args);
@@ -50,6 +49,9 @@ class World {
         }
 
         S* get(S)() if (is (S == struct)) {
+            if (s.typeNum !in world.allocators) {
+                throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
+            }
             return (cast (ComponentAllocator!S) world.allocators[S.typeNum]).get(id);
         }
     }
