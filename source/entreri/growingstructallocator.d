@@ -19,7 +19,6 @@ class GrowingStructAllocator(S): ComponentAllocator!S {
         holes.reserve(25);
     }
 
-    // TODO: Maybe have this just return a pointer to the area
     S* allocate(uint id) {
         if (id in mapping) {
             throw new Exception("Entity " ~ id.to!string ~
@@ -29,7 +28,6 @@ class GrowingStructAllocator(S): ComponentAllocator!S {
             uint pos = holes[$ - 1];
             holes.length -= 1;
             mapping[id] = pos;
-            //arr[pos] = S();
             return &arr[pos];
         } else {
             arr.length += 1;
@@ -57,7 +55,7 @@ class GrowingStructAllocator(S): ComponentAllocator!S {
         uint pos = mapping[id];
         mapping.remove(id);
 
-        holes ~= pos;
+        holes.assumeSafeAppend() ~= pos;
     }
 }
 
