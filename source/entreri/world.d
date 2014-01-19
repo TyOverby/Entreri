@@ -1,6 +1,9 @@
 module entreri.world;
 
 import entreri.componentallocator;
+import entreri.growingstructallocator;
+
+import std.conv: emplace;
 
 debug import std.stdio;
 
@@ -22,6 +25,9 @@ class World {
         allocators[C.typeNum] = cast(void*) componentAllocator;
     }
 
+    void register(S)() if (is (S == struct)){
+        register!S(new GrowingStructAllocator!S);
+    }
 
     struct Entity {
         private bool alive = true;
@@ -32,30 +38,33 @@ class World {
             this.id = id;
         }
 
-        C* add(C)() {
-            if (C.typeNum !in world.allocators) {
+        S* add(S, Args...)(Args args) if (is (S == struct)) {
+            if (S.typeNum !in world.allocators) {
+                // TODO: Add descriptive name
                 throw new Exception("No allocator for component ");
             }
-            auto alloc = (cast (ComponentAllocator!C) world.allocators[C.typeNum]);
-            return alloc.allocate(id);
+            ComponentAllocator!S alloc = (cast (ComponentAllocator!S) world.allocators[S.typeNum]);
+            S* ptr = alloc.allocate(id);
+            ptr = emplace(ptr, args);
+            return ptr;
         }
 
-        C* get(C)() {
-            return (cast (ComponentAllocator!C) world.allocators[C.typeNum]).get(id);
+        S* get(S)() if (is (S == struct)) {
+            return (cast (ComponentAllocator!S) world.allocators[S.typeNum]).get(id);
         }
     }
 }
 
+// Struct component
 unittest {
-    import entreri.structallocator;
-
     struct Foo {
+        // TODO: replace this with the mixin.
         static typeNum = 0;
         uint x = 5;
     }
 
     auto w = new World;
-    w.register!Foo(new StructAllocator!Foo);
+    w.register!Foo(new GrowingStructAllocator!Foo);
 
     auto e = w.newEntity();
     assert(e.id == 0);
@@ -70,3 +79,47 @@ unittest {
     assert(f2.x == 10);
 }
 
+// Struct component with constructor.
+unittest {
+    struct Foo {
+        // TODO: replace this with the mixin
+        static typeNum = 0;
+        uint x;
+        int y;
+
+        this(uint x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    auto w = new World;
+    w.register!Foo(new GrowingStructAllocator!Foo);
+
+    auto e = w.newEntity();
+
+    auto foo = e.add!Foo(4, -1);
+
+    auto foog = e.get!Foo;
+    assert(foog.x == 4);
+    assert(foog.y == -1);
+}
+
+// Struct component with default allocator
+unittest {
+    struct Foo {
+        // TODO: replace this with the mixin
+        static typeNum = 0;
+        uint x;
+    }
+
+    auto w = new World;
+    w.register!Foo;
+
+    auto e = w.newEntity();
+    auto f = e.add!Foo;
+    f.x = 5;
+
+    auto f2 = e.get!Foo;
+    assert(f2.x == 5);
+}
