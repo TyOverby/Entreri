@@ -45,6 +45,10 @@ class GrowingStructAllocator(S): ComponentAllocator!S {
         return &arr[mapping[id]];
     }
 
+    bool hasComponent(uint id) {
+        return (id in mapping) !is null;
+    }
+
     void remove(uint id) {
         if (id !in mapping) {
             throw new Exception("Entity " ~ id.to!string ~

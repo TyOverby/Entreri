@@ -3,22 +3,29 @@ module entreri.world;
 import entreri.component;
 import entreri.componentallocator;
 import entreri.growingstructallocator;
+import entreri.system;
 
 import std.conv: emplace;
 debug import std.stdio;
 
 class World {
     //TODO: Use a StructAllocator to manage the entities list :P
-    private Entity[] entities;
+    private GrowingStructAllocator!Entity entities;
     private uint idCounter = 0;
 
-    void*[uint] allocators;
+    private void*[uint] allocators;
+    private System[] systems;
+
+    this() {
+        this.entities = new GrowingStructAllocator!Entity;
+    }
 
     Entity* newEntity() {
-        auto e = Entity(idCounter++);
-        e.world = this;
-        entities ~= e;
-        return &entities[entities.length - 1];
+        auto id = idCounter++;
+        Entity* e = entities.allocate(id);
+        cast(uint)(e.id) = id;
+        cast(World)(e.world) = this;
+        return e;
     }
 
     void register(C)(ComponentAllocator!C componentAllocator) {
@@ -29,13 +36,25 @@ class World {
         register!S(new GrowingStructAllocator!S);
     }
 
+    void addSystem(System system) {
+        systems ~= system;
+    }
+
+    void advance() {
+        foreach (system; systems) {
+            system.step();
+        }
+    }
+
     struct Entity {
         private bool alive = true;
-        const uint id;
-        package World world;
+        public const uint id;
+        private World world;
 
-        private this(uint id) {
+        package this(uint id, World world) {
             this.id = id;
+            this.alive = true;
+            this.world = world;
         }
 
         S* add(S, Args...)(Args args) if (is (S == struct)) {
@@ -54,6 +73,20 @@ class World {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
             return (cast (ComponentAllocator!S) world.allocators[S.typeNum]).get(id);
+        }
+
+        void kill() {
+            this.alive = false;
+            this.world.entities.remove(id);
+
+            foreach (c; this.world.allocators) {
+                auto cMan = cast (ComponentAllocator!void) c;
+                if (cMan.hasComponent(id)) {
+                    cMan.remove(id);
+                }
+            }
+
+            // TODO: Go through and remove from any systems that this entity might belong to.
         }
     }
 }
@@ -138,4 +171,35 @@ unittest {
     auto e = w.newEntity();
     assertThrown(e.add!Foo);
     assertThrown(e.get!Foo);
+}
+
+// Entity and Allocator removal
+unittest {
+    struct Foo {
+        mixin Component;
+        uint x = 5;
+    }
+
+    struct Bar {
+        mixin Component;
+        float y = 10;
+    }
+
+    auto w = new World;
+    auto fAlloc = new GrowingStructAllocator!Foo;
+    auto bAlloc = new GrowingStructAllocator!Bar;
+    w.register!Foo(fAlloc);
+    w.register!Bar(bAlloc);
+
+    auto e = w.newEntity();
+    e.add!Foo;
+    e.add!Bar;
+
+    assert(fAlloc.hasComponent(e.id) &&
+           bAlloc.hasComponent(e.id));
+
+    e.kill();
+
+    assert(!fAlloc.hasComponent(e.id) &&
+           !bAlloc.hasComponent(e.id));
 }
