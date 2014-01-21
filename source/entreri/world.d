@@ -23,9 +23,19 @@ class World {
     Entity* newEntity() {
         auto id = idCounter++;
         Entity* e = entities.allocate(id);
+        // This field is const, but for some reason, I can't emplace
+        // from here.
         cast(uint)(e.id) = id;
-        cast(World)(e.world) = this;
+        e.world = this;
         return e;
+    }
+
+    Entity* entityFrom(uint id) {
+        return entities.get(id);
+    }
+
+    bool hasEntity(uint id) {
+        return entities.hasComponent(id);
     }
 
     void register(C)(ComponentAllocator!C componentAllocator) {
@@ -73,6 +83,14 @@ class World {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
             return (cast (ComponentAllocator!S) world.allocators[S.typeNum]).get(id);
+        }
+
+        void remove(S)() if (is (S == struct)) {
+            if (S.typeNum !in world.allocators) {
+                throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
+            }
+
+            (cast (ComponentAllocator!S) world.allocators[S.typeNum]).remove(id);
         }
 
         void kill() {
@@ -171,6 +189,7 @@ unittest {
     auto e = w.newEntity();
     assertThrown(e.add!Foo);
     assertThrown(e.get!Foo);
+    assertThrown(e.remove!Foo);
 }
 
 // Entity and Allocator removal
@@ -202,4 +221,35 @@ unittest {
 
     assert(!fAlloc.hasComponent(e.id) &&
            !bAlloc.hasComponent(e.id));
+}
+
+// World.entityFrom
+unittest {
+    struct Foo {
+        mixin Component;
+        uint x;
+    }
+
+    auto w = new World;
+    w.register!Foo;
+
+    auto e1 = w.newEntity();
+    auto e2 = w.entityFrom(e1.id);
+
+    assert(e1.id == e2.id);
+
+    e1.add!Foo;
+
+    auto e1f = e1.get!Foo;
+    auto e2f = e2.get!Foo;
+
+    e1f.x = 5;
+    assert(e2f.x == 5);
+
+    e2f.x = 10;
+    assert(e1f.x == 10);
+
+    assert(w.hasEntity(e1.id));
+    e1.kill();
+    assert(!w.hasEntity(e1.id));
 }

@@ -40,7 +40,3 @@ class System {
     }
 
 }
-
-unittest {
-    auto w = new World;
-}

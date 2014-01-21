@@ -21,7 +21,7 @@ class GrowingStructAllocator(S): ComponentAllocator!S {
     S* allocate(uint id) {
         if (id in mapping) {
             throw new Exception("Entity " ~ id.to!string ~
-                    " already has component " ~ typeid(S).stringof);
+                    " already has a mapping to " ~ typeid(S).stringof);
         }
         if (holes.length > 0) {
             uint pos = holes[$ - 1];
@@ -39,7 +39,7 @@ class GrowingStructAllocator(S): ComponentAllocator!S {
     S* get(uint id) {
         if (id !in mapping) {
             throw new Exception("Entity " ~ id.to!string ~
-                    " does not have component " ~ typeid(S).stringof ~
+                    " does not have a mapping to " ~ typeid(S).stringof ~
                     " to get");
         }
         return &arr[mapping[id]];
@@ -52,7 +52,7 @@ class GrowingStructAllocator(S): ComponentAllocator!S {
     void remove(uint id) {
         if (id !in mapping) {
             throw new Exception("Entity " ~ id.to!string ~
-                    " does not have component " ~ typeid(S).stringof ~
+                    " does not have a mapping to " ~ typeid(S).stringof ~
                     " to remove");
         }
         uint pos = mapping[id];
@@ -107,7 +107,12 @@ unittest {
     auto sa = new GrowingStructAllocator!Foo;
 
     auto f1 = sa.allocate(0);
+    assert(sa.hasComponent(0));
+
     sa.remove(0);
+
+    assert(!sa.hasComponent(0));
+
     auto f2 = sa.allocate(1);
     auto f3 = sa.allocate(2);
 
