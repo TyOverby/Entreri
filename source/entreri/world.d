@@ -1,5 +1,6 @@
 module entreri.world;
 
+import entreri.component;
 import entreri.componentallocator;
 import entreri.growingstructallocator;
 
@@ -49,7 +50,7 @@ class World {
         }
 
         S* get(S)() if (is (S == struct)) {
-            if (s.typeNum !in world.allocators) {
+            if (S.typeNum !in world.allocators) {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
             return (cast (ComponentAllocator!S) world.allocators[S.typeNum]).get(id);
@@ -60,8 +61,7 @@ class World {
 // Struct component
 unittest {
     struct Foo {
-        // TODO: replace this with the mixin.
-        static typeNum = 0;
+        mixin Component;
         uint x = 5;
     }
 
@@ -84,8 +84,7 @@ unittest {
 // Struct component with constructor.
 unittest {
     struct Foo {
-        // TODO: replace this with the mixin
-        static typeNum = 0;
+        mixin Component;
         uint x;
         int y;
 
@@ -110,8 +109,7 @@ unittest {
 // Struct component with default allocator
 unittest {
     struct Foo {
-        // TODO: replace this with the mixin
-        static typeNum = 0;
+        mixin Component;
         uint x;
     }
 
@@ -124,4 +122,20 @@ unittest {
 
     auto f2 = e.get!Foo;
     assert(f2.x == 5);
+}
+
+// Misbehaving
+unittest {
+    import std.exception: assertThrown;
+
+    struct Foo {
+       mixin Component;
+       uint x = 5;
+    }
+
+    auto w = new World;
+
+    auto e = w.newEntity();
+    assertThrown(e.add!Foo);
+    assertThrown(e.get!Foo);
 }

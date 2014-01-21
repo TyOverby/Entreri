@@ -4,7 +4,6 @@ import entreri.componentallocator;
 
 import std.array;
 import std.conv: to;
-import std.exception: assertThrown;
 debug import std.stdio;
 
 //TODO: Make a ClassAllocator
@@ -115,6 +114,7 @@ unittest {
 
 // Incorrectly using features
 unittest {
+    import std.exception: assertThrown;
     struct Foo {
         uint x;
         double d;
