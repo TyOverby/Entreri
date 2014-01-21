@@ -1,5 +1,6 @@
 module entreri.world;
 
+import entreri.aspect;
 import entreri.component;
 import entreri.componentallocator;
 import entreri.growingstructallocator;
@@ -9,7 +10,6 @@ import std.conv: emplace;
 debug import std.stdio;
 
 class World {
-    //TODO: Use a StructAllocator to manage the entities list :P
     private GrowingStructAllocator!Entity entities;
     private uint idCounter = 0;
 
@@ -60,6 +60,12 @@ class World {
         private bool alive = true;
         public const uint id;
         private World world;
+        private Aspect _aspect;
+
+        @property
+        public const(Aspect) aspect() {
+            return _aspect;
+        }
 
         package this(uint id, World world) {
             this.id = id;
@@ -75,6 +81,11 @@ class World {
             ComponentAllocator!S alloc = (cast (ComponentAllocator!S) world.allocators[S.typeNum]);
             S* ptr = alloc.allocate(id);
             ptr = emplace(ptr, args);
+
+            auto oldAspect = this.aspect;
+            auto newAspect = oldAspect.add!S;
+            // TODO: Add to AspectSystems
+            this._aspect = newAspect;
             return ptr;
         }
 
@@ -91,6 +102,11 @@ class World {
             }
 
             (cast (ComponentAllocator!S) world.allocators[S.typeNum]).remove(id);
+
+            auto oldAspect = this.aspect;
+            auto newAspect = oldAspect.remove!S;
+            // TODO: Remove from AspectSystems
+            this._aspect = newAspect;
         }
 
         void kill() {
