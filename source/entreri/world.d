@@ -9,6 +9,12 @@ import entreri.system;
 import std.conv: emplace;
 debug import std.stdio: writeln;
 
+/++
+ + A collection that manages Entities, Systems and Components
+ + at the highest level.  Any simulation requires a single
+ + World object.  Entities can not be shared between different
+ + World instances.
+ +/
 class World {
     private GrowingStructAllocator!Entity entities;
     private uint idCounter = 0;
@@ -20,6 +26,9 @@ class World {
         this.entities = new GrowingStructAllocator!Entity;
     }
 
+    /++
+     + Creates an Entity managed by this world with a unique id number.
+     +/
     Entity* newEntity() {
         auto id = idCounter++;
         Entity* e = entities.allocate(id);
@@ -30,27 +39,64 @@ class World {
         return e;
     }
 
+    /++
+     + Returns the entity with the provided id.
+     +
+     + If an entity doesn't exist with that ID, an Exception will be thrown.
+     + This is meant for retrieving an entity whose ID you have already
+     + known and are sure that it is still alive.
+     +
+     +/
     Entity* entityFrom(uint id) {
         return entities.get(id);
     }
 
+    /++
+     + Checks to see if the world is managing an entity with the provided id.
+     +
+     + Returns: true if an entity with the id exists and is alive.
+     +/
     bool hasEntity(uint id) {
         return entities.hasComponent(id);
     }
 
-    void register(C)(ComponentAllocator!C componentAllocator) {
-        allocators[C.typeNum] = cast(void*) componentAllocator;
+    /++
+     + Sets an allocation strategy for a specific Component.
+     +
+     + Components can have different allocation strategies.
+     + By default, structs use the GrowingStructAllocator, but
+     + you can use other provided allocators or write your own.
+     +/
+    void register(S)(ComponentAllocator!S componentAllocator)
+    if (is (S == struct) && __traits(compiles, S.typeNum)) {
+        allocators[S.typeNum] = cast(void*) componentAllocator;
     }
 
+    /++
+     + Registers a component with the default Allocation
+     + strategy.
+     +/
     void register(S)() if (is (S == struct)){
         register!S(new GrowingStructAllocator!S);
     }
 
+    /++
+     + Adds an AspectSystem to the world to be run when
+     + world.advance() is called.
+     +
+     + The order that multiple calls to addSystem is significant
+     + because Systems are run in the order that they are added.
+     +/
     void addSystem(IAspectSystem system) {
         systems ~= system;
         system.setWorld(this);
     }
 
+    /++
+     + Runs a single step of the simulation.  All systems
+     + added to the world are run in the order that they
+     + were added in.
+     +/
     void advance() {
         foreach (system; systems) {
             system.step();
@@ -74,7 +120,29 @@ class World {
             this.world = world;
         }
 
-        S* add(S, Args...)(Args args) if (is (S == struct) && __traits(compiles, S.typeNum)) {
+        /++
+         + Adds a component to the entity.
+         +
+         + The world that this Entity comes from must already be
+         + registered with the component that you are trying to add
+         + and this entity must not already have this type of component.
+         +
+         + Returns: A pointer to the component attached to the entity.
+         +
+         + Examples:
+         + ---
+         + struct Foo {
+         +   mixin Component;
+         +   uint x;
+         + }
+         + ...
+         + Entity* e = world.newEntity();
+         + e.add!Foo(5); // Adds a new Foo component.  The arguments are
+         +               // passed to the Foo constructor.
+         + ---
+         +/
+        S* add(S, Args...)(Args args)
+        if (is (S == struct) && __traits(compiles, S.typeNum)) {
             if (S.typeNum !in world.allocators) {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
@@ -96,7 +164,8 @@ class World {
             return ptr;
         }
 
-        S* get(S)() if (is (S == struct) && __traits(compiles, S.typeNum)) {
+        S* get(S)()
+        if (is (S == struct) && __traits(compiles, S.typeNum)) {
             if (S.typeNum !in world.allocators) {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }

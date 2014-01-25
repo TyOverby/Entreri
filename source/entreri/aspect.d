@@ -3,7 +3,13 @@ module entreri.aspect;
 import std.bitmanip;
 import entreri.component;
 
-struct Aspect {
+/++
+ + A representaton of a set of types.  Every Entity contains an Aspect that
+ + represents the components that have been added to it.  Every AspectSystem
+ + has an Aspect that represents the minimum component requirements for
+ + watching an Entity.
+ +/
+package struct Aspect {
     static Aspect from(T...)() {
         Aspect a;
         a = a.addAll!(T);

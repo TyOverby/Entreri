@@ -6,6 +6,41 @@ import entreri.world;
 
 debug import std.stdio;
 
+/++
+ + A system that only operates on entities that have the specified components.
+ +
+ + For example, if entity `a` has components {X, Y, Z}, and an AspectSystem `as`
+ + is watching entities with {X, Y}, `as` will follow entity `a`.  However, if
+ + an entity `b` has components {X, Z}, `as` will *not* follow `b`.
+ +
+ + Examples:
+ + ---
+ + struct X {
+ +     mixin Component;
+ + }
+ + struct Y {
+ +     mixin Component;
+ +  }
+ + struct Z {
+ +     mixin Component;
+ + }
+ +
+ + // We are *just* following X and Y.
+ + class XYSystem: AspectSystem!(X, Y) {
+ +     protected bool process(World.Entity* entity) {
+ +         // We can ask for these components now
+ +         X* x = entity.get!X;
+ +         Y* y = entity.get!Y;
+ +
+ +         // if we returned false at any point
+ +         // the system would stop processing entities.
+ +         return true;
+ +     }
+ + }
+ + ---
+ +
+ + See_Also: entreri.System
+ +/
 class AspectSystem(Components...): IAspectSystem {
     private Aspect _aspect;
 
@@ -21,8 +56,10 @@ class AspectSystem(Components...): IAspectSystem {
         // call the parent constructor.
     }
 
-    @property
-    override Aspect aspect() {
+    /++
+     + Returns: The aspect of components that this System follows.
+     +/
+    @property override Aspect aspect() {
         return _aspect;
     }
 }
@@ -90,10 +127,12 @@ unittest {
     class RenderSystem: AspectSystem!Position {
         import std.stdio: writefln;
 
-        override protected
+        Position[] positions;
+
+        override
         bool process(World.Entity* e) {
-            auto pos = e.get!Position;
-            writefln("(%d, %d)", pos.x, pos.y);
+            Position* pos = e.get!Position;
+            positions ~= *pos;
             return true;
         }
     }
@@ -104,7 +143,8 @@ unittest {
     world.register!Velocity;
 
     world.addSystem(new MovementSystem);
-    world.addSystem(new RenderSystem);
+    RenderSystem rs = new RenderSystem;
+    world.addSystem(rs);
 
     auto e = world.newEntity();
     e.add!Position(0, 0);
@@ -125,4 +165,6 @@ unittest {
 
     assert(e.get!Position.x == 4);
     assert(e.get!Position.y == -2);
+
+    assert(rs.positions.length == 3);
 }
