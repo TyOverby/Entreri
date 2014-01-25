@@ -13,8 +13,13 @@ class GrowingStructAllocator(S): ComponentAllocator!S {
     private uint[] holes;
     private uint[uint] mapping;
 
-    this () {
+    this() {
         arr.reserve(100);
+        holes.reserve(25);
+    }
+
+    this(uint startingSize) {
+        arr.reserve(startingSize);
         holes.reserve(25);
     }
 

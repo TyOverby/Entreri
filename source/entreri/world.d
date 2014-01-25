@@ -160,6 +160,8 @@ class World {
                 }
             }
 
+            debug writeln(id);
+
             this._aspect = newAspect;
             return ptr;
         }
