@@ -7,14 +7,14 @@ import entreri.growingstructallocator;
 import entreri.system;
 
 import std.conv: emplace;
-debug import std.stdio;
+debug import std.stdio: writeln;
 
 class World {
     private GrowingStructAllocator!Entity entities;
     private uint idCounter = 0;
 
     private void*[uint] allocators;
-    private System[] systems;
+    private IAspectSystem[] systems;
 
     this() {
         this.entities = new GrowingStructAllocator!Entity;
@@ -46,8 +46,9 @@ class World {
         register!S(new GrowingStructAllocator!S);
     }
 
-    void addSystem(System system) {
+    void addSystem(IAspectSystem system) {
         systems ~= system;
+        system.setWorld(this);
     }
 
     void advance() {
@@ -73,7 +74,7 @@ class World {
             this.world = world;
         }
 
-        S* add(S, Args...)(Args args) if (is (S == struct)) {
+        S* add(S, Args...)(Args args) if (is (S == struct) && __traits(compiles, S.typeNum)) {
             if (S.typeNum !in world.allocators) {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
@@ -84,19 +85,25 @@ class World {
 
             auto oldAspect = this.aspect;
             auto newAspect = oldAspect.add!S;
-            // TODO: Add to AspectSystems
+
+            foreach(system; world.systems) {
+                if (!system.shouldContain(oldAspect) && system.shouldContain(newAspect)) {
+                    system.addEntity(id);
+                }
+            }
+
             this._aspect = newAspect;
             return ptr;
         }
 
-        S* get(S)() if (is (S == struct)) {
+        S* get(S)() if (is (S == struct) && __traits(compiles, S.typeNum)) {
             if (S.typeNum !in world.allocators) {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
             return (cast (ComponentAllocator!S) world.allocators[S.typeNum]).get(id);
         }
 
-        void remove(S)() if (is (S == struct)) {
+        void remove(S)() if (is (S == struct) && __traits(compiles, S.typeNum)) {
             if (S.typeNum !in world.allocators) {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
@@ -105,7 +112,13 @@ class World {
 
             auto oldAspect = this.aspect;
             auto newAspect = oldAspect.remove!S;
-            // TODO: Remove from AspectSystems
+
+            foreach (system; world.systems) {
+                if(system.shouldContain(oldAspect) && !system.shouldContain(newAspect)) {
+                    system.removeEntity(id);
+                }
+            }
+
             this._aspect = newAspect;
         }
 

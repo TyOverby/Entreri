@@ -19,21 +19,42 @@ struct Aspect {
     }
 
     private Aspect add(T)() const {
-        Aspect copy;
-        copy.ba = this.ba.dup;
+        return this.add(T.typeNum);
+    }
 
-        if(copy.ba.length < T.typeNum + 1) {
-            copy.ba.length = T.typeNum + 1;
+    private Aspect add(uint id) const {
+        Aspect copy = this.dup();
+
+        if(copy.ba.length < id + 1) {
+            copy.ba.length = id + 1;
         }
 
-        copy.ba[T.typeNum] = 1;
+        copy.ba[id] = 1;
         return copy;
     }
 
     private Aspect remove(T)() const {
-        Aspect copy;
-        copy.ba[T.typeNum] = 0;
+        return this.remove(T.typeNum);
+    }
+
+    private Aspect remove(uint id) const {
+        Aspect copy = this.dup();
+        copy.ba[id] = 0;
+
+        // We should resize the array so that
+        // isSubsetOf can skip the
+        if (id == copy.ba.length - 1) {
+            for (uint i = id; i >= 0; i--) {
+                auto v = copy.ba[i];
+                if (v == 1) {
+                    copy.ba.length = i + 1;
+                    break;
+                }
+            }
+        }
+        assert(copy.ba[copy.ba.length - 1] == 1);
         return copy;
+
     }
 
     private Aspect addAll(T...)() const {
@@ -52,19 +73,26 @@ struct Aspect {
         }
     }
 
-    bool isSubsetOf(Aspect other) const {
-        import std.stdio;
+    bool isSubsetOf(const Aspect other) const {
+        debug import std.stdio;
         if(this.ba.length > other.ba.length) {
             return false;
         } else {
             foreach(i, x; this.ba) {
                 if(x && !other.ba[i]) {
-                    writeln("falsy at", x, i);
+                    debug writeln("falsy at", x, i);
                     return false;
                 }
             }
             return true;
         }
+    }
+
+    bool contains(const uint id) {
+        if (id >= ba.length) {
+            return false;
+        }
+        return ba[id] == 1;
     }
 }
 

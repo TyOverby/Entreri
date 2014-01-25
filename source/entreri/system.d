@@ -1,42 +1,76 @@
 module entreri.system;
 
+import entreri.aspect;
 import entreri.world;
 
-class System {
-    private World world;
-    private World.Entity*[] entities;
+import std.algorithm: map;
+import std.array: array;
 
-    package void setWorld(World world) {
+abstract class System {
+    private World world;
+    private void*[uint] entities;
+
+    final package void setWorld(World world) {
         assert(this.world is null);
         this.world = world;
     }
 
-    void processAll(World.Entity*[] entities) {
+
+    protected bool shouldProcess() {
+        // Meant to be overridden.
+        return true;
+    }
+
+    protected void processAll(lazy World.Entity*[] entities) {
         // Meant to be overridden.
     }
 
-    bool process(World.Entity* entity) {
+    protected bool process(World.Entity* entity) {
         // Meant to be overridden.
         return false;
     }
 
-    void onAdd(World.Entity* e) {
+    protected void onAdd(World.Entity* e) {
         // Meant to be overridden.
     }
 
-    void onRemove(World.Entity* e) {
+    protected void onRemove(World.Entity* e) {
         // Meant to be overridden.
     }
 
-    package void step() {
-        processAll(entities);
+    final package void step() {
+        if(!shouldProcess()) {
+            return;
+        }
 
-        foreach (e; entities) {
+        processAll(entities.keys.map!(x => world.entityFrom(x)).array);
+
+        foreach (uint k, v; entities) {
             // Early exit
-            if(!process(e)) {
+            if(!process(world.entityFrom(k))) {
                 break;
             }
         }
     }
 
+    final package void addEntity(uint id) {
+        entities[id] = null;
+        assert(id in entities);
+        onAdd(world.entityFrom(id));
+    }
+
+    final package void removeEntity(uint id) {
+        entities.remove(id);
+        assert(id !in entities);
+        onRemove(world.entityFrom(id));
+    }
+}
+
+package abstract class IAspectSystem: System {
+    final package bool shouldContain(const Aspect aspect) {
+        return this.aspect.isSubsetOf(aspect);
+    }
+
+    @property
+    abstract Aspect aspect();
 }
