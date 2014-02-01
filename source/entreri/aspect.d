@@ -39,11 +39,11 @@ package struct Aspect {
         return copy;
     }
 
-    private Aspect remove(T)() const {
+    public Aspect remove(T)() const {
         return this.remove(T.typeNum);
     }
 
-    private Aspect remove(uint id) const {
+    public Aspect remove(uint id) const {
         Aspect copy = this.dup();
         copy.ba[id] = 0;
 
@@ -99,6 +99,19 @@ package struct Aspect {
             return false;
         }
         return ba[id] == 1;
+    }
+
+    int opApply(int delegate(uint) dg) const {
+        int result = 0;
+        foreach (i, v; this.ba) {
+            if (v == 1) {
+                result = dg(cast(uint) i);
+                if (result) {
+                    break;
+                }
+            }
+        }
+        return result;
     }
 }
 

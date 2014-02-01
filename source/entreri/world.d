@@ -108,6 +108,7 @@ class World {
         public const uint id;
         private World world;
         private Aspect _aspect;
+        private void*[uint] componentCache;
 
         @property
         public const(Aspect) aspect() {
@@ -160,21 +161,27 @@ class World {
                 }
             }
 
-            debug writeln(id);
-
             this._aspect = newAspect;
+            this.componentCache[S.typeNum] = ptr;
             return ptr;
         }
 
         S* get(S)()
         if (is (S == struct) && __traits(compiles, S.typeNum)) {
+            if (S.typeNum in this.componentCache) {
+                return cast(S*) this.componentCache[S.typeNum];
+            }
             if (S.typeNum !in world.allocators) {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
-            return (cast (ComponentAllocator!S) world.allocators[S.typeNum]).get(id);
+            auto ptr = (cast (ComponentAllocator!S) world.allocators[S.typeNum]).get(id);
+            this.componentCache[S.typeNum] = ptr;
+            return ptr;
         }
 
         void remove(S)() if (is (S == struct) && __traits(compiles, S.typeNum)) {
+            this.componentCache.remove(S.typeNum);
+
             if (S.typeNum !in world.allocators) {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
@@ -197,14 +204,20 @@ class World {
             this.alive = false;
             this.world.entities.remove(id);
 
-            foreach (c; this.world.allocators) {
-                auto cMan = cast (ComponentAllocator!void) c;
-                if (cMan.hasComponent(id)) {
+            auto preAspect = this.aspect;
+            foreach (typeId; preAspect) {
+                auto cMan = cast (ComponentAllocator!void) this.world.allocators[typeId];
+                if(cMan.hasComponent(id))  {
                     cMan.remove(id);
                 }
+                this.componentCache.remove(typeId);
             }
 
-            // TODO: Go through and remove from any systems that this entity might belong to.
+            foreach (system; world.systems) {
+                if (system.shouldContain(preAspect)) {
+                    system.removeEntity(id);
+                }
+            }
         }
     }
 }

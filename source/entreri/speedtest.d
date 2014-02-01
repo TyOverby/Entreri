@@ -38,7 +38,7 @@ class RenderSystem: AspectSystem!Position {
     }
 }
 
-enum EntityCount = 100;
+enum EntityCount = 100_000;
 enum IterationCount = 60;
 void main() {
     GC.disable();
