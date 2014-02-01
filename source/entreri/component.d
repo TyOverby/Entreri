@@ -1,11 +1,14 @@
 module entreri.component;
 
-uint _typenum_pool = 0;
+
+struct GlobalComponentData {
+    static uint typenum_pool = 0;
+};
 
 mixin template Component() {
     static immutable uint typeNum;
     static this() {
-        typeNum = _typenum_pool++;
+        typeNum = GlobalComponentData.typenum_pool++;
     }
 }
 

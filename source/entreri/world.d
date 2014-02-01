@@ -3,7 +3,7 @@ module entreri.world;
 import entreri.aspect;
 import entreri.component;
 import entreri.componentallocator;
-import entreri.growingstructallocator;
+import entreri.allocators.growingstructallocator;
 import entreri.system;
 
 import std.conv: emplace;
