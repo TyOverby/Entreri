@@ -12,7 +12,8 @@ import std.array: array;
  +/
 abstract class System {
     private World world;
-    private void*[uint] entities;
+    // entities is mostly just being used as a set...
+    private bool[uint] entities;
 
     final package void setWorld(World world) {
         assert(this.world is null);
@@ -108,13 +109,23 @@ abstract class System {
         }
     }
 
-    final package void addEntity(uint id) {
-        entities[id] = null;
+    /++
+     + Adds an entity by id-number directly to the system.  This method is
+     + to be used with custom-made systems and should not be used directly
+     + with AspectSystems.
+     +/
+    final public void addEntity(uint id) {
+        entities[id] = true;
         assert(id in entities);
         onAdd(world.entityFrom(id));
     }
 
-    final package void removeEntity(uint id) {
+    /++
+     + Removes an entity by id-number directly from the system.  This method
+     + is to be used with custom-made systems and should not be used directly
+     + with AspectSystems.
+     +/
+    final public void removeEntity(uint id) {
         entities.remove(id);
         assert(id !in entities);
         onRemove(world.entityFrom(id));

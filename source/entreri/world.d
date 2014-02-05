@@ -6,6 +6,7 @@ import entreri.componentallocator;
 import entreri.growingstructallocator;
 import entreri.system;
 
+import alg = std.algorithm;
 import std.conv: emplace;
 debug import std.stdio: writeln;
 
@@ -20,7 +21,8 @@ class World {
     private uint idCounter = 0;
 
     private void*[uint] allocators;
-    private IAspectSystem[] systems;
+    private IAspectSystem[] aspectSystems;
+    private System[] systems;
 
     this() {
         this.entities = new GrowingStructAllocator!Entity;
@@ -84,12 +86,43 @@ class World {
      + Adds an AspectSystem to the world to be run when
      + world.advance() is called.
      +
-     + The order that multiple calls to addSystem is significant
-     + because Systems are run in the order that they are added.
+     + The order of multiple calls to addSystem (independent from override)
+     + is significant because Systems are run in the order that they are added.
      +/
     void addSystem(IAspectSystem system) {
+        aspectSystems ~= system;
         systems ~= system;
         system.setWorld(this);
+    }
+
+    /++
+     + Adds a system to the world to be run when world.advance() is called.
+     +
+     + The order of multiple calls to addSystem is significant because
+     + Systems are run in the order that they are added.
+     +
+     + TODO: Write tests.
+     +/
+    void addSystem(System system) {
+        systems ~= system;
+        system.setWorld(this);
+    }
+
+    /++
+     + Removes a system from the world.
+     + TODO: Write tests
+     +/
+    void removeSystem(System system) {
+        auto idx = alg.countUntil(systems, system);
+        if (idx == -1) {
+            throw new Exception("Removal of system that does not exist.");
+        }
+        systems = alg.remove(systems, idx);
+
+        if (cast(IAspectSystem) system) {
+            idx = alg.countUntil(aspectSystems, system);
+            aspectSystems = alg.remove(aspectSystems, idx);
+        }
     }
 
     /++
@@ -154,7 +187,7 @@ class World {
             auto oldAspect = this.aspect;
             auto newAspect = oldAspect.add!S;
 
-            foreach(system; world.systems) {
+            foreach(system; world.aspectSystems) {
                 if (!system.shouldContain(oldAspect) && system.shouldContain(newAspect)) {
                     system.addEntity(id);
                 }
@@ -184,7 +217,7 @@ class World {
             auto oldAspect = this.aspect;
             auto newAspect = oldAspect.remove!S;
 
-            foreach (system; world.systems) {
+            foreach (system; world.aspectSystems) {
                 if(system.shouldContain(oldAspect) && !system.shouldContain(newAspect)) {
                     system.removeEntity(id);
                 }
@@ -352,4 +385,15 @@ unittest {
     assert(w.hasEntity(e1.id));
     e1.kill();
     assert(!w.hasEntity(e1.id));
+}
+
+// World.removeSystem
+unittest {
+    struct Foo {
+        mixin Component;
+        uint x;
+    }
+    class MySystem: System {
+        uint count;
+    }
 }
