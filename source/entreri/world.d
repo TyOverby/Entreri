@@ -8,6 +8,8 @@ import entreri.system;
 
 import alg = std.algorithm;
 import std.conv: emplace;
+import std.container: Array;
+import std.algorithm: filter;
 debug import std.stdio: writeln;
 
 /++
@@ -22,7 +24,7 @@ class World {
 
     private void*[uint] allocators;
     private IAspectSystem[] aspectSystems;
-    private System[] systems;
+    private Array!System systems;
 
     this() {
         this.entities = new GrowingStructAllocator!Entity;
@@ -110,19 +112,10 @@ class World {
 
     /++
      + Removes a system from the world.
-     + TODO: Write tests
+     + TODO: Write tests. Fuck std.container
      +/
     void removeSystem(System system) {
-        auto idx = alg.countUntil(systems, system);
-        if (idx == -1) {
-            throw new Exception("Removal of system that does not exist.");
-        }
-        systems = alg.remove(systems, idx);
-
-        if (cast(IAspectSystem) system) {
-            idx = alg.countUntil(aspectSystems, system);
-            aspectSystems = alg.remove(aspectSystems, idx);
-        }
+        systems.linearRemove(systems[].filter!(a => a is system));
     }
 
     /++
@@ -212,18 +205,21 @@ class World {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
 
-            (cast (ComponentAllocator!S) world.allocators[S.typeNum]).remove(id);
-
             auto oldAspect = this.aspect;
             auto newAspect = oldAspect.remove!S;
 
             foreach (system; world.aspectSystems) {
-                if(system.shouldContain(oldAspect) && !system.shouldContain(newAspect)) {
+                if(system.shouldContain(oldAspect) &&
+                   !system.shouldContain(newAspect)) {
                     system.removeEntity(id);
                 }
             }
 
             this._aspect = newAspect;
+
+            // Remove the element from the allocator last because we want the
+            // Systems to be able to perform cleanup later.
+            (cast (ComponentAllocator!S) world.allocators[S.typeNum]).remove(id);
         }
 
         void kill() {
