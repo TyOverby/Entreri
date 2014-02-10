@@ -155,6 +155,10 @@ class World {
          +
          + Returns: A pointer to the component attached to the entity.
          +
+         + WARNING: The pointer returned by this method is only garanteed to be valid
+         + until the next time world.advance() is called.  After that point, behavior
+         + is entirely undefined.  Do not store the return value of this method.
+         +
          + Examples:
          + ---
          + struct Foo {
@@ -192,6 +196,14 @@ class World {
             return ptr;
         }
 
+        /++
+         + Fetches a pointer to a component attached to this entity.  If there is
+         + no such component attached to the entity, an exception will be raised.
+         +
+         + WARNING: The pointer returned by this method is only garanteed to be valid
+         + until the next time world.advance() is called.  After that point, behavior
+         + is entirely undefined.  Do not store the return value of this method.
+         +/
         S* get(S)()
         if (is (S == struct) && __traits(compiles, S.typeNum)) {
             if (S.typeNum !in world.allocators) {
@@ -200,6 +212,10 @@ class World {
             return (cast (ComponentAllocator!S) world.allocators[S.typeNum]).get(id);
         }
 
+        /++
+         + Removes a component from this entity.  If there is no such component in the entity
+         + an exception will be thrown.
+         +/
         void remove(S)() if (is (S == struct) && __traits(compiles, S.typeNum)) {
             if (S.typeNum !in world.allocators) {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
@@ -222,6 +238,10 @@ class World {
             (cast (ComponentAllocator!S) world.allocators[S.typeNum]).remove(id);
         }
 
+        /++
+         + Removes the entity from the world and removes all the components from the
+         + entity and removes the entity from all the systems that it belongs to.
+         +/
         void kill() {
             this.alive = false;
             this.world.entities.remove(id);
