@@ -6,7 +6,10 @@ import entreri.componentallocator;
 import entreri.allocators.growingstructallocator;
 import entreri.system;
 
+import alg = std.algorithm;
 import std.conv: emplace;
+import std.container: Array;
+import std.algorithm: filter;
 debug import std.stdio: writeln;
 
 /++
@@ -20,7 +23,8 @@ class World {
     private uint idCounter = 0;
 
     private void*[uint] allocators;
-    private IAspectSystem[] systems;
+    private IAspectSystem[] aspectSystems;
+    private Array!System systems;
 
     this() {
         this.entities = new GrowingStructAllocator!Entity;
@@ -84,12 +88,34 @@ class World {
      + Adds an AspectSystem to the world to be run when
      + world.advance() is called.
      +
-     + The order that multiple calls to addSystem is significant
-     + because Systems are run in the order that they are added.
+     + The order of multiple calls to addSystem (independent from override)
+     + is significant because Systems are run in the order that they are added.
      +/
     void addSystem(IAspectSystem system) {
+        aspectSystems ~= system;
         systems ~= system;
         system.setWorld(this);
+    }
+
+    /++
+     + Adds a system to the world to be run when world.advance() is called.
+     +
+     + The order of multiple calls to addSystem is significant because
+     + Systems are run in the order that they are added.
+     +
+     + TODO: Write tests.
+     +/
+    void addSystem(System system) {
+        systems ~= system;
+        system.setWorld(this);
+    }
+
+    /++
+     + Removes a system from the world.
+     + TODO: Write tests. Fuck std.container
+     +/
+    void removeSystem(System system) {
+        systems.linearRemove(systems[].filter!(a => a is system));
     }
 
     /++
@@ -130,6 +156,10 @@ class World {
          +
          + Returns: A pointer to the component attached to the entity.
          +
+         + WARNING: The pointer returned by this method is only garanteed to be valid
+         + until the next time world.advance() is called.  After that point, behavior
+         + is entirely undefined.  Do not store the return value of this method.
+         +
          + Examples:
          + ---
          + struct Foo {
@@ -155,7 +185,7 @@ class World {
             auto oldAspect = this.aspect;
             auto newAspect = oldAspect.add!S;
 
-            foreach(system; world.systems) {
+            foreach(system; world.aspectSystems) {
                 if (!system.shouldContain(oldAspect) && system.shouldContain(newAspect)) {
                     system.addEntity(id);
                 }
@@ -166,6 +196,14 @@ class World {
             return ptr;
         }
 
+        /++
+         + Fetches a pointer to a component attached to this entity.  If there is
+         + no such component attached to the entity, an exception will be raised.
+         +
+         + WARNING: The pointer returned by this method is only garanteed to be valid
+         + until the next time world.advance() is called.  After that point, behavior
+         + is entirely undefined.  Do not store the return value of this method.
+         +/
         S* get(S)()
         if (is (S == struct) && __traits(compiles, S.typeNum)) {
             if (S.typeNum in this.componentCache) {
@@ -179,6 +217,10 @@ class World {
             return ptr;
         }
 
+        /++
+         + Removes a component from this entity.  If there is no such component in the entity
+         + an exception will be thrown.
+         +/
         void remove(S)() if (is (S == struct) && __traits(compiles, S.typeNum)) {
             this.componentCache.remove(S.typeNum);
 
@@ -186,20 +228,27 @@ class World {
                 throw new Exception("No allocator registered for component " ~ typeid(S).stringof);
             }
 
-            (cast (ComponentAllocator!S) world.allocators[S.typeNum]).remove(id);
-
             auto oldAspect = this.aspect;
             auto newAspect = oldAspect.remove!S;
 
-            foreach (system; world.systems) {
-                if(system.shouldContain(oldAspect) && !system.shouldContain(newAspect)) {
+            foreach (system; world.aspectSystems) {
+                if(system.shouldContain(oldAspect) &&
+                   !system.shouldContain(newAspect)) {
                     system.removeEntity(id);
                 }
             }
 
             this._aspect = newAspect;
+
+            // Remove the element from the allocator last because we want the
+            // Systems to be able to perform cleanup later.
+            (cast (ComponentAllocator!S) world.allocators[S.typeNum]).remove(id);
         }
 
+        /++
+         + Removes the entity from the world and removes all the components from the
+         + entity and removes the entity from all the systems that it belongs to.
+         +/
         void kill() {
             this.alive = false;
             this.world.entities.remove(id);
@@ -365,4 +414,15 @@ unittest {
     assert(w.hasEntity(e1.id));
     e1.kill();
     assert(!w.hasEntity(e1.id));
+}
+
+// World.removeSystem
+unittest {
+    struct Foo {
+        mixin Component;
+        uint x;
+    }
+    class MySystem: System {
+        uint count;
+    }
 }
