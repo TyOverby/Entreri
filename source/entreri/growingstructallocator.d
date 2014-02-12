@@ -64,6 +64,9 @@ class GrowingStructAllocator(S): ComponentAllocator!S {
         mapping.remove(id);
 
         holes.assumeSafeAppend() ~= pos;
+
+        // Calls the destructor.
+        arr[pos].destroy();
     }
 }
 
