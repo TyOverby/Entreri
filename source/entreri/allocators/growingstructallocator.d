@@ -1,4 +1,4 @@
-module entreri.growingstructallocator;
+module entreri.allocators.growingstructallocator;
 
 import entreri.componentallocator;
 

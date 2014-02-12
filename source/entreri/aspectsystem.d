@@ -50,10 +50,6 @@ class AspectSystem(Components...): IAspectSystem {
 
     package void setWorld(World world) {
         super.setWorld(world);
-
-        // do this in setWorld because it's useless without a world,
-        // and because we don't want to force our implementors to
-        // call the parent constructor.
     }
 
     /++
