@@ -66,7 +66,7 @@ class RenderSystem: AspectSystem!Position {
         // terminal bombarded with a shit-ton of
         // update messages.
 
-        // writefln("%d (%f, %f)", e.id, pos.x, pos.y);
+        //writefln("%d (%f, %f)", e.id, pos.x, pos.y);
         return true;
     }
 }
@@ -100,7 +100,7 @@ void main() {
     }
 
     foreach (i; 0 .. IterationCount) {
-        // Advance the stage of the world.  This basically goes through
+        // Advance the state of the world.  This basically goes through
         // each of your systems and calls processAll() and process().
         world.advance();
     }

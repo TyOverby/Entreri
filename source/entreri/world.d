@@ -115,8 +115,13 @@ class World {
      + TODO: Write tests. Fuck std.container
      +/
     void removeSystem(System system) {
+<<<<<<< HEAD
         import std.algorithm;
         systems.linearRemove(systems[].find(system)[0 .. 1]);
+=======
+        import std.algorithm: find;
+        systems.linearRemove(systems[].find(system)[0..1]);
+>>>>>>> 7c425627fd5e330c8c88ff3af4c51066f257fa01
     }
 
     /++
@@ -125,6 +130,11 @@ class World {
      + were added in.
      +/
     void advance() {
+        foreach (alloc; this.allocators) {
+            ComponentAllocator!Entity allocator =
+                cast(ComponentAllocator!Entity) alloc;
+            allocator.reorg();
+        }
         foreach (system; systems) {
             system.step();
         }
@@ -135,7 +145,10 @@ class World {
         public const uint id;
         private World world;
         private Aspect _aspect;
+
         private void*[uint] componentCache;
+        // Used as a set.
+        private byte[System] systems;
 
         @property
         public const(Aspect) aspect() {
@@ -246,15 +259,30 @@ class World {
             (cast (ComponentAllocator!S) world.allocators[S.typeNum]).remove(id);
         }
 
+
+        package
+        void addSystem(System system) {
+            this.systems[system] = 0;
+        }
+
+        package
+        void removeSystem(System system) {
+            if (this.alive) {
+                this.systems.remove(system);
+            }
+        }
+
         /++
          + Removes the entity from the world and removes all the components from the
          + entity and removes the entity from all the systems that it belongs to.
          +/
+        public
         void kill() {
             this.alive = false;
-            this.world.entities.remove(id);
 
-            auto preAspect = this.aspect;
+            auto preAspect = this._aspect;
+            // TODO: Test this
+            // Remove from allocators.
             foreach (typeId; preAspect) {
                 auto cMan = cast (ComponentAllocator!void) this.world.allocators[typeId];
                 if(cMan.hasComponent(id))  {
@@ -263,12 +291,94 @@ class World {
                 this.componentCache.remove(typeId);
             }
 
+<<<<<<< HEAD
             foreach (system; world.aspectSystems) {
                 if (system.shouldContain(preAspect)) {
+=======
+            // TODO: Test this
+            // Remove from systems.
+            foreach (system, _; this.systems) {
+                if (system.hasEntity(this.id)) {
+>>>>>>> 7c425627fd5e330c8c88ff3af4c51066f257fa01
                     system.removeEntity(id);
                 }
             }
+
+            this.world.entities.remove(id);
         }
+    }
+}
+
+// system removal
+unittest {
+    class MySystem: System {
+        bool added = false;
+        bool removed = false;
+        uint ran = 0;
+
+        override
+        void onAdd(World.Entity* e) {
+            added = true;
+        }
+
+        protected override
+        bool process(World.Entity* e) {
+            ran ++;
+            return true;
+        }
+
+        override
+        void onRemove(World.Entity* e) {
+            removed = true;
+        }
+    }
+
+    {
+        auto world = new World();
+        auto sys = new MySystem();
+        world.addSystem(sys);
+
+        auto e = world.newEntity();
+        sys.addEntity(e.id);
+
+        assert(sys.hasEntity(e.id));
+        assert(sys.added);
+
+        world.advance();
+        assert(sys.ran == 1);
+
+        e.kill();
+
+        assert(!sys.hasEntity(e.id));
+        assert(sys.removed);
+
+        world.advance();
+        assert(sys.ran == 1);
+    }
+    {
+        auto world = new World();
+        auto sys = new MySystem();
+        world.addSystem(sys);
+
+        auto e = world.newEntity();
+        sys.addEntity(e.id);
+        assert(sys.hasEntity(e.id));
+        assert(sys.added);
+
+        world.advance();
+        assert(sys.ran == 1);
+
+        sys.removeEntity(e.id);
+        assert(!sys.hasEntity(e.id));
+        assert(sys.removed);
+
+        world.advance();
+        assert(sys.ran == 1);
+
+        e.kill();
+
+        world.advance();
+        assert(sys.ran == 1);
     }
 }
 
@@ -382,6 +492,8 @@ unittest {
 
     e.kill();
 
+    assert(!fAlloc.hasComponent(e.id));
+    assert(!bAlloc.hasComponent(e.id));
     assert(!fAlloc.hasComponent(e.id) &&
            !bAlloc.hasComponent(e.id));
 }
@@ -392,6 +504,7 @@ unittest {
         mixin Component;
         uint x;
     }
+
 
     auto w = new World;
     w.register!Foo;

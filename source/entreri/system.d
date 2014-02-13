@@ -116,8 +116,10 @@ abstract class System {
      +/
     final public void addEntity(uint id) {
         entities[id] = true;
-        assert(id in entities);
-        onAdd(world.entityFrom(id));
+
+        auto entity = world.entityFrom(id);
+        onAdd(entity);
+        entity.addSystem(this);
     }
 
     /++
@@ -127,8 +129,14 @@ abstract class System {
      +/
     final public void removeEntity(uint id) {
         entities.remove(id);
-        assert(id !in entities);
-        onRemove(world.entityFrom(id));
+
+        auto entity = world.entityFrom(id);
+        onRemove(entity);
+        entity.removeSystem(this);
+    }
+
+    final public bool hasEntity(uint id) {
+        return (id in entities) !is null;
     }
 }
 
