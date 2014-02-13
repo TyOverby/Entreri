@@ -125,6 +125,11 @@ class World {
      + were added in.
      +/
     void advance() {
+        foreach (alloc; this.allocators) {
+            ComponentAllocator!Entity allocator =
+                cast(ComponentAllocator!Entity) alloc;
+            allocator.reorg();
+        }
         foreach (system; systems) {
             system.step();
         }

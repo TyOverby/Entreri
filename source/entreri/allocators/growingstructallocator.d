@@ -93,8 +93,7 @@ class GrowingStructAllocator(S): ComponentAllocator!S {
         arr[pos].destroy();
     }
 
-    package
-    void merge() {
+    void reorg() {
         this.clobber = true;
         scope(exit) this.clobber = false;
 
@@ -144,7 +143,7 @@ unittest {
         assert(sa.tempMapping.length == i - Cap + 1);
     }
 
-    sa.merge();
+    sa.reorg();
     assert(sa.arr.length == Post);
     assert(sa.mapping.length == Post);
     assert(sa.temp.length == 0);
