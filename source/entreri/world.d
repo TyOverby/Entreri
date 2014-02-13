@@ -115,7 +115,8 @@ class World {
      + TODO: Write tests. Fuck std.container
      +/
     void removeSystem(System system) {
-        systems.linearRemove(systems[].filter!(a => a is system));
+        import std.algorithm;
+        systems.linearRemove(systems[].find(system)[0 .. 1]);
     }
 
     /++
@@ -262,7 +263,7 @@ class World {
                 this.componentCache.remove(typeId);
             }
 
-            foreach (system; world.systems) {
+            foreach (system; world.aspectSystems) {
                 if (system.shouldContain(preAspect)) {
                     system.removeEntity(id);
                 }

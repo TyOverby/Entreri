@@ -133,9 +133,9 @@ abstract class System {
 }
 
 package abstract class IAspectSystem: System {
-    final package bool shouldContain(const Aspect aspect) {
+    final package bool shouldContain(const Aspect aspect) const {
         return this.aspect.isSubsetOf(aspect);
     }
 
-    @property Aspect aspect();
+    @property const(Aspect) aspect() const;
 }

@@ -8,3 +8,4 @@
 
 * Rewrite allocators with std.container.Array instead of a raw array.
 * Add entity tagging support. (as a built in system?)
+* Add own exception class

@@ -55,7 +55,7 @@ class AspectSystem(Components...): IAspectSystem {
     /++
      + Returns: The aspect of components that this System follows.
      +/
-    @property override Aspect aspect() {
+    @property override const(Aspect) aspect() const {
         return _aspect;
     }
 }

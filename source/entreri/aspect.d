@@ -8,6 +8,8 @@ import entreri.component;
  + represents the components that have been added to it.  Every AspectSystem
  + has an Aspect that represents the minimum component requirements for
  + watching an Entity.
+ +
+ + TODO: make Aspect a const struct.
  +/
 package struct Aspect {
     static Aspect from(T...)() {
@@ -24,11 +26,11 @@ package struct Aspect {
         return copy;
     }
 
-    private Aspect add(T)() const {
+    public Aspect add(T)() const {
         return this.add(T.typeNum);
     }
 
-    private Aspect add(uint id) const {
+    public Aspect add(uint id) const {
         Aspect copy = this.dup();
 
         if(copy.ba.length < id + 1) {
@@ -94,7 +96,7 @@ package struct Aspect {
         }
     }
 
-    bool contains(const uint id) {
+    bool contains(const uint id) const {
         if (id >= ba.length) {
             return false;
         }
